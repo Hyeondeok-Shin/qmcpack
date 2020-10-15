@@ -19,6 +19,7 @@
 #define QMCPLUSPLUS_XMLSTRING_H
 
 #include <string>
+#include <stdexcept>
 #include <libxml/xmlmemory.h>
 #include <libxml/tree.h>
 
@@ -68,6 +69,8 @@ public:
       assign((const char*)attr_char);
       xmlFree(attr_char);
     }
+    else
+      throw std::runtime_error(std::string(name) + " not found");
   }
 
   /// expose base class constructors

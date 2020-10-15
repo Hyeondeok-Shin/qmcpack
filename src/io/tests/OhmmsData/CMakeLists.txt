@@ -18,7 +18,7 @@ SET(UTEST_NAME deterministic-unit_test_${SRC_DIR})
 # Directory where input file is copied to, and working directory for unit test
 SET(UTEST_DIR ${qmcpack_BINARY_DIR}/tests/io/xml_test)
 
-ADD_EXECUTABLE(${UTEST_EXE} test_xml.cpp)
+ADD_EXECUTABLE(${UTEST_EXE} test_xml.cpp test_OhmmsParameter.cpp)
 TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main qmcutil)
 
 

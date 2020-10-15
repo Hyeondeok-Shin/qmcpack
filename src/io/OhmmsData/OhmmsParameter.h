@@ -88,6 +88,21 @@ public:
   inline bool put(std::istream& is)
   {
     is >> ref_;
+    if(!is.good())
+    {
+      if(is.bad())
+      {
+        throw std::runtime_error("badbit");
+      }
+      else if(is.fail())
+      {
+        throw std::runtime_error("failbit");
+      }
+      else if(is.eof())
+      {
+        //throw std::runtime_error("eof");
+      }
+    }
     return true;
   }
 
