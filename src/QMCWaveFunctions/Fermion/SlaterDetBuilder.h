@@ -43,7 +43,7 @@ public:
    * \param psi reference to the wavefunction
    * \param ions reference to the ions
    */
-  SlaterDetBuilder(Communicate* comm, ParticleSet& els, TrialWaveFunction& psi, PtclPoolType& psets);
+  SlaterDetBuilder(Communicate* comm, SPOSetBuilderFactory& factory, ParticleSet& els, TrialWaveFunction& psi, PtclPoolType& psets);
 
   /** initialize the Antisymmetric wave function for electrons
    *@param cur the current xml node
@@ -52,11 +52,12 @@ public:
   WaveFunctionComponent* buildComponent(xmlNodePtr cur) override;
 
 private:
+  /// reference to the sposet_builder_factory, should be const once the legacy input style is removed
+  SPOSetBuilderFactory& sposet_builder_factory_;
   ///reference to TrialWaveFunction, should go away as the CUDA code.
   TrialWaveFunction& targetPsi;
   ///reference to a PtclPoolType
   PtclPoolType& ptclPool;
-  std::unique_ptr<SPOSetBuilderFactory> mySPOSetBuilderFactory;
   SlaterDeterminant_t* slaterdet_0;
   MultiSlaterDeterminant_t* multislaterdet_0;
   MultiSlaterDeterminantFast* multislaterdetfast_0;
@@ -108,14 +109,18 @@ private:
                             (std::is_floating_point<VT>::value), int> = 0>
   void readCoeffs(hdf_archive& hin, std::vector<VT>& ci_coeff, size_t n_dets,int ext_level)
   {
+    ///Determinant coeffs are stored in Coeff for the ground state and Coeff_N 
+    ///for the Nth excited state. 
+    ///The Ground State is always stored in Coeff 
+    ///Backward compatibility is insured
     std::string extVar;
-    extVar="Coeff_"+std::to_string(ext_level-1);
-    ///Determinant coeffs are stored in Coeff_N where N=1 for the ground state and N=2
-    ///Would be the first excited state.
-    ///Backwards compatibility: Old format assums "Coeff"
+    if (ext_level==0)
+       extVar="Coeff";
+    else
+       extVar="Coeff_"+std::to_string(ext_level);
+
     if (!hin.readEntry(ci_coeff,extVar))
-       if(!hin.readEntry(ci_coeff,"Coeff"))
-          APP_ABORT("Could not read CI coefficients from HDF5");
+       APP_ABORT("Could not read CI coefficients from HDF5");
       
   }
   template<typename VT,
@@ -128,24 +133,24 @@ private:
     std::vector<double> CIcoeff_imag;
     CIcoeff_imag.resize(n_dets);
     CIcoeff_real.resize(n_dets);
+    fill(CIcoeff_imag.begin(), CIcoeff_imag.end(), 0.0);
+    ///Determinant coeffs are stored in Coeff_N where N is Nth excited state. 
+    ///The Ground State is always stored in Coeff. 
+    ///Backward compatibility is insured
 
     std::string ext_var;
-    extVar="Coeff_"+std::to_string(ext_level-1);
+    if (ext_level==0)
+      extVar="Coeff";
+    else
+      extVar="Coeff_"+std::to_string(ext_level);
     
-    ///Determinant coeffs are stored in Coeff_N where N=1 for the ground state and N=2
-    ///Would be the first excited state.
-    ///Backwards compatibility: Old format assums "Coeff" or "Coeff_imag"  
 
     if(!hin.readEntry(CIcoeff_real, extVar))
-       if(!hin.readEntry(CIcoeff_real, "Coeff"))
-          APP_ABORT("Could not read CI coefficients from HDF5")
-       else
-          hin.read(CIcoeff_imag, "Coeff_imag");
-    else
-    {
-      extVar="Coeff_"+std::to_string(ext_level-1)+"_imag";
-      hin.read(CIcoeff_imag, extVar);
-    }
+       APP_ABORT("Could not read CI coefficients from HDF5")
+
+    extVar=extVar+"_imag";
+    if(!hin.readEntry(CIcoeff_imag, extVar))
+       app_log() << "Coeff_imag not found in h5. Set to zero." << std::endl;
          
     for (size_t i = 0; i < n_dets; i++)
       ci_coeff[i] = VT(CIcoeff_real[i], CIcoeff_imag[i]);

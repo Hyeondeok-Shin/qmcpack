@@ -75,7 +75,7 @@ QMCGaussianParserBase::QMCGaussianParserBase()
       ci_neb(0),
       ci_nstates(0),
       NbKpts(0),
-      nbexcitedstates(1),
+      nbexcitedstates(0),
       ci_threshold(1e-20),
       Title("sample"),
       basisType("Gaussian"),
@@ -138,7 +138,7 @@ QMCGaussianParserBase::QMCGaussianParserBase(int argc, char** argv)
       ci_neb(0),
       ci_nstates(0),
       NbKpts(0),
-      nbexcitedstates(1),
+      nbexcitedstates(0),
       ci_threshold(1e-20),
       Title("sample"),
       basisType("Gaussian"),
@@ -2411,14 +2411,14 @@ xmlNodePtr QMCGaussianParserBase::createMultiDeterminantSetFromH5()
   xmlNewProp(detlist, (const xmlChar*)"neb", (const xmlChar*)cineb.str().c_str());
   xmlNewProp(detlist, (const xmlChar*)"nstates", (const xmlChar*)nstates.str().c_str());
   xmlNewProp(detlist, (const xmlChar*)"cutoff", (const xmlChar*)ci_thr.str().c_str());
-  if (nbexcitedstates != 1)
+  if (nbexcitedstates >= 1)
   {
     app_log() << "WARNING!! THE HDF5 Contains CI coefficients for " << nbexcitedstates - 1
-              << ". By default, the ground state coefficients will be loaded ( ext_level=1). If you want to evaluate "
+              << ". By default, the ground state coefficients will be loaded ( ext_level=0). If you want to evaluate "
                  "an excited for which the coefficients are stored in the HDF5 file, modify the value of ext_level "
-                 "between 1 and "
-              << nbexcitedstates << std::endl;
-    xmlNewProp(detlist, (const xmlChar*)"ext_level", (const xmlChar*)"1");
+                 "between 0 and "
+              << nbexcitedstates - 1 << std::endl;
+    xmlNewProp(detlist, (const xmlChar*)"ext_level", (const xmlChar*)"0");
   }
   if (!debug)
     xmlNewProp(detlist, (const xmlChar*)"href", (const xmlChar*)multih5file.c_str());
